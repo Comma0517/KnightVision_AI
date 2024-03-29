@@ -1,4 +1,4 @@
-# Welcome to KnightVision AI
+# Welcome to Francine AI
 
 
 
@@ -36,7 +36,7 @@ Let us now build a real application we will use the following architecture
 
 ![steps](./assets/steps.png)
 
-In this KnightVision AI we'll use Streamlit which is an amazingly simple to use framework to create front-end web applications.
+In this Francine AI we'll use Streamlit which is an amazingly simple to use framework to create front-end web applications.
 
 To get this application started locally you'll need to install the streamlit dependency as follows:
 ```bash
