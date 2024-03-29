@@ -103,7 +103,7 @@ if 'messages' not in st.session_state:
     st.session_state.messages = []
 
 # Draw a title and some markdown
-st.title("🤖 Knight Vision AI")
+st.image('./assets/logo.png', width=250)
 
 # Include the upload form for new data to be Vectorized
 with st.sidebar:
@@ -118,7 +118,7 @@ for message in st.session_state.messages:
     st.chat_message(message['role']).markdown(message['content'])
 
 # Draw the chat input box
-if question := st.chat_input("What's up?"):
+if question := st.chat_input("Send message here!"):
     
     # Store the user's question in a session object for redrawing next time
     st.session_state.messages.append({"role": "human", "content": question})
@@ -128,7 +128,7 @@ if question := st.chat_input("What's up?"):
         st.markdown(question)
 
     # UI placeholder to start filling with agent response
-    with st.chat_message('assistant'):
+    with st.chat_message('assistant', avatar='./assets/assist.png'):
         response_placeholder = st.empty()
 
     # Generate the answer by calling OpenAI's Chat Model
