@@ -5,7 +5,6 @@ import pinecone
 
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
-from langchain_community.vectorstores import AstraDB
 from langchain.schema.runnable import RunnableMap
 from langchain.prompts import ChatPromptTemplate
 from langchain.callbacks.base import BaseCallbackHandler
@@ -50,7 +49,6 @@ def vectorize_text(uploaded_file, vector_store):
         # Vectorize the PDF and load it into the Astra DB Vector Store
         pages = text_splitter.split_documents(docs)
         Pinecone.from_documents(documents=pages, embedding=OpenAIEmbeddings(), index_name=st.secrets['PINECONE_INDEX'], namespace=st.secrets['PINECONE_NAMESPACE'])
-        # vector_store.add_documents(pages)  
         st.info(f"{len(pages)} pages loaded.")
 
 # Cache prompt for future runs
@@ -84,29 +82,19 @@ chat_model = load_chat_model()
 @st.cache_resource(show_spinner='Connecting to Vector DB')
 def load_vector_store():
     # Connect to the Vector Store
-    vector_store = AstraDB(
-        embedding=OpenAIEmbeddings(),
-        collection_name="my_store",
-        api_endpoint=st.secrets['ASTRA_API_ENDPOINT'],
-        token=st.secrets['ASTRA_TOKEN']
-    )
+    vector_store = Pinecone.from_existing_index(
+			index_name=st.secrets['PINECONE_INDEX'],
+			embedding=OpenAIEmbeddings(),
+			namespace=st.secrets['PINECONE_NAMESPACE'],
+		)
     return vector_store
 vector_store = load_vector_store()
 
 # Cache the Retriever for future runs
 @st.cache_resource(show_spinner='Getting retriever')
 def load_retriever():
-    print(st.secrets['PINECONE_INDEX'], st.secrets['PINECONE_NAMESPACE'])
     # Get the retriever for the Chat Model
-    vectorstore = Pinecone.from_existing_index(
-			index_name=st.secrets['PINECONE_INDEX'],
-			embedding=OpenAIEmbeddings(),
-			namespace=st.secrets['PINECONE_NAMESPACE'],
-		)
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
-    # retriever = vector_store.as_retriever(
-    #     search_kwargs={"k": 5}
-    # )
+    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
     return retriever
 retriever = load_retriever()
 
