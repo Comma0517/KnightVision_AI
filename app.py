@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import tempfile
+import pinecone
 
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
@@ -10,6 +11,9 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
+from langchain.vectorstores import Pinecone
+
+pinecone.init(api_key=st.secrets['PINECONE_KEY'], environment=st.secrets['PINECONE_ENV'])
 
 # Streaming call back handler for responses
 class StreamHandler(BaseCallbackHandler):
@@ -45,7 +49,8 @@ def vectorize_text(uploaded_file, vector_store):
 
         # Vectorize the PDF and load it into the Astra DB Vector Store
         pages = text_splitter.split_documents(docs)
-        vector_store.add_documents(pages)  
+        Pinecone.from_documents(documents=pages, embedding=OpenAIEmbeddings(), index_name=st.secrets['PINECONE_INDEX'], namespace=st.secrets['PINECONE_NAMESPACE'])
+        # vector_store.add_documents(pages)  
         st.info(f"{len(pages)} pages loaded.")
 
 # Cache prompt for future runs
@@ -91,10 +96,17 @@ vector_store = load_vector_store()
 # Cache the Retriever for future runs
 @st.cache_resource(show_spinner='Getting retriever')
 def load_retriever():
+    print(st.secrets['PINECONE_INDEX'], st.secrets['PINECONE_NAMESPACE'])
     # Get the retriever for the Chat Model
-    retriever = vector_store.as_retriever(
-        search_kwargs={"k": 5}
-    )
+    vectorstore = Pinecone.from_existing_index(
+			index_name=st.secrets['PINECONE_INDEX'],
+			embedding=OpenAIEmbeddings(),
+			namespace=st.secrets['PINECONE_NAMESPACE'],
+		)
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+    # retriever = vector_store.as_retriever(
+    #     search_kwargs={"k": 5}
+    # )
     return retriever
 retriever = load_retriever()
 
@@ -113,12 +125,23 @@ with st.sidebar:
         if submitted:
             vectorize_text(uploaded_file, vector_store)
 
+    st.write("Integrate with your cloud environment")
+
+    # Layout for cloud platform buttons on the same line
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.button('GCP')
+    with col2:
+        st.button('AWS')
+    with col3:
+        st.button('Azure')
+
 # Draw all messages, both user and bot so far (every time the app reruns)
 for message in st.session_state.messages:
     st.chat_message(message['role']).markdown(message['content'])
 
 # Draw the chat input box
-if question := st.chat_input("Send message here!"):
+if question := st.chat_input("Send Message here!"):
     
     # Store the user's question in a session object for redrawing next time
     st.session_state.messages.append({"role": "human", "content": question})

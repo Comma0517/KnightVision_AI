@@ -2,3 +2,4 @@
 streamlit
 ragstack-ai
 pypdf
+pinecone-client==2.2.4
